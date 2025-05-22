@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge'; // Added missing import
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -36,6 +36,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { X, Plus } from 'lucide-react';
+import UrlSubmissionForm from './UrlSubmissionForm';
 
 // Define form schema with Zod
 const toolFormSchema = z.object({
@@ -121,7 +122,7 @@ const prepareDefaultValues = (tool: AITool | null): ToolFormValues => {
 const ToolForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { selectedTool, createTool, updateTool, loading, tools } = useAdmin();
+  const { selectedTool, createTool, updateTool, loading, tools, apiUrl } = useAdmin();
   const [newCategory, setNewCategory] = useState('');
   const [newTag, setNewTag] = useState('');
 
@@ -140,6 +141,11 @@ const ToolForm: React.FC = () => {
       }
     }
   }, [id, selectedTool, tools, form]);
+
+  // Handle URL extraction data
+  const handleExtractedData = (data: AITool) => {
+    form.reset(prepareDefaultValues(data));
+  };
 
   // Submit handler
   const onSubmit = async (values: ToolFormValues) => {
@@ -244,6 +250,9 @@ const ToolForm: React.FC = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* URL Submission Form - Only show on new tool creation */}
+        {!id && <UrlSubmissionForm onDataReceived={handleExtractedData} apiUrl={apiUrl} />}
+        
         <Card>
           <CardHeader>
             <CardTitle>{id ? 'Edit AI Tool' : 'Add New AI Tool'}</CardTitle>

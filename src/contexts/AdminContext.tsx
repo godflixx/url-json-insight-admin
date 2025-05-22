@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AITool, ApiResponse } from '@/types/admin';
@@ -225,7 +224,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loading,
     error,
     selectedTool,
-    apiUrl,
+    apiUrl, 
     setApiUrl,
     fetchData,
     setSelectedTool,
