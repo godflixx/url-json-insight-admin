@@ -107,3 +107,40 @@
 .floating-dots {
   @apply absolute rounded-full bg-agent-primary/30 animate-pulse;
 }
+
+/* Add custom styles for admin pages */
+.admin-card {
+  @apply bg-agent-card border border-agent-border/20 rounded-lg shadow-lg shadow-agent-primary/5 backdrop-blur-sm;
+}
+
+.admin-gradient-text {
+  @apply bg-gradient-to-r from-agent-primary to-agent-secondary bg-clip-text text-transparent font-bold;
+}
+
+.admin-input {
+  @apply bg-agent-background border-agent-border/50 text-white focus:border-agent-primary focus:ring-agent-primary/20;
+}
+
+.admin-button {
+  @apply bg-gradient-to-r from-agent-primary to-agent-secondary hover:from-agent-primary/90 hover:to-agent-secondary/90 transition-all;
+}
+
+.admin-card-header {
+  @apply border-b border-agent-border/20 p-4;
+}
+
+.admin-card-content {
+  @apply p-4;
+}
+
+.admin-table {
+  @apply border border-agent-border/20 rounded-lg overflow-hidden;
+}
+
+.admin-stat-card {
+  @apply bg-gradient-to-br from-agent-card to-agent-card/70 border border-agent-border/20 rounded-lg p-6 shadow-lg shadow-agent-primary/5;
+}
+
+.glassmorphism {
+  @apply bg-agent-card/80 backdrop-blur-md border border-agent-border/30 shadow-lg shadow-agent-primary/5;
+}
