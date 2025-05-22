@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { AITool } from '@/types/admin';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 
 interface UrlSubmissionFormProps {
   onDataReceived: (data: AITool) => void;
@@ -85,11 +85,15 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
         <CardTitle className="text-lg">Extract Tool Data from Website</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex items-start gap-2 text-sm text-muted-foreground">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>Example URLs to test: <code>https://www.openai.com/chatgpt</code>, <code>https://www.anthropic.com/claude</code>, or <code>https://www.perplexity.ai</code></p>
+        </div>
         <form onSubmit={handleSubmit} className="flex gap-3">
           <div className="flex-grow">
             <Input
               type="url"
-              placeholder="Enter website URL (e.g., https://example.ai)"
+              placeholder="Enter website URL (e.g., https://www.openai.com/chatgpt)"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="admin-input"
