@@ -1,26 +1,16 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Input } from '@/components/ui/input';
 import { 
-  Loader2, LayoutDashboard, Database, 
+  LayoutDashboard, Database, 
   PlusCircle, Settings, BookOpen
 } from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
-  const { apiUrl, setApiUrl, fetchData, loading } = useAdmin();
-  const [inputApiUrl, setInputApiUrl] = useState(apiUrl);
+  const { fetchData } = useAdmin();
   const location = useLocation();
-
-  const handleFetchData = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputApiUrl !== apiUrl) {
-      setApiUrl(inputApiUrl);
-    }
-    fetchData();
-  };
 
   const navItems = [
     { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, path: "/admin" },
@@ -41,37 +31,6 @@ const AdminSidebar: React.FC = () => {
             <span className="text-agent-primary">Admin</span> Panel
           </h2>
         </div>
-      </div>
-      
-      <div className="p-4 border-b border-agent-border">
-        <form onSubmit={handleFetchData} className="space-y-3">
-          <div>
-            <label htmlFor="api-url" className="text-sm font-medium block mb-1 text-agent-muted">
-              API URL
-            </label>
-            <Input
-              id="api-url"
-              type="text"
-              value={inputApiUrl}
-              onChange={(e) => setInputApiUrl(e.target.value)}
-              placeholder="Enter API URL"
-              className="w-full bg-agent-background border-agent-border"
-            />
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-agent-primary hover:bg-agent-secondary text-white" 
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
-              </>
-            ) : (
-              "Fetch Data"
-            )}
-          </Button>
-        </form>
       </div>
       
       <nav className="flex-1 overflow-y-auto py-4">
