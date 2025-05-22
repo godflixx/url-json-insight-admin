@@ -64,12 +64,20 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				admin: {
-					'primary': '#1e40af',
-					'secondary': '#3b82f6',
-					'accent': '#60a5fa',
-					'background': '#f8fafc',
-					'card': '#ffffff',
-					'border': '#e2e8f0'
+					'primary': '#6d41e0', // Purple from the image
+					'secondary': '#8860ff',
+					'accent': '#9d7bff',
+					'background': '#0f1116', // Dark background from image
+					'card': '#1a1d25', // Slightly lighter dark for cards
+					'border': '#2a2c3a'
+				},
+				agent: {
+					'primary': '#6d41e0',
+					'secondary': '#8860ff',
+					'background': '#0f1116',
+					'card': '#1a1d25',
+					'text': '#ffffff',
+					'muted': '#a0a0b0',
 				}
 			},
 			borderRadius: {
