@@ -89,7 +89,7 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
           <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <p>Example URLs to test: <code>https://www.openai.com/chatgpt</code>, <code>https://www.anthropic.com/claude</code>, or <code>https://www.perplexity.ai</code></p>
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-3">
+        <div className="flex gap-3">
           <div className="flex-grow">
             <Input
               type="url"
@@ -100,7 +100,7 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
             />
           </div>
           <Button 
-            type="submit" 
+            onClick={handleSubmit} 
             className="admin-button" 
             disabled={isLoading}
           >
@@ -113,7 +113,7 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
               'Extract Data'
             )}
           </Button>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );
