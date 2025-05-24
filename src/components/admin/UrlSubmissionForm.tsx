@@ -1,3 +1,4 @@
+// UrlSubmissionForm.tsx
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,71 +10,39 @@ import { Loader2, Info } from 'lucide-react';
 
 interface UrlSubmissionFormProps {
   onDataReceived: (data: AITool) => void;
-  apiUrl: string;
 }
 
-const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({ 
-  onDataReceived,
-  apiUrl 
+const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
+  onDataReceived
 }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!url.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!apiUrl) {
-      toast({
-        title: "Error",
-        description: "API URL is not configured. Please set it in settings.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Please enter a URL", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
-
     try {
-      const response = await fetch(`${apiUrl}/extract-url`, {
+      const res = await fetch('http://127.0.0.1:8000/analyze-website', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        onDataReceived(data.data);
-        toast({
-          title: "Success",
-          description: "Website data extracted successfully",
-        });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const json = await res.json();
+      if (json.agent_data) {
+        onDataReceived(json.agent_data);
+        toast({ title: "Success", description: "Data extracted successfully" });
       } else {
-        throw new Error(data.message || 'Unknown API error');
+        throw new Error(json.detail || 'Invalid response');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to extract data';
-      toast({
-        title: "Error extracting data",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      const msg = err instanceof Error ? err.message : 'Extraction failed';
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -87,31 +56,32 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
       <CardContent>
         <div className="mb-4 flex items-start gap-2 text-sm text-muted-foreground">
           <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p>Example URLs to test: <code>https://www.openai.com/chatgpt</code>, <code>https://www.anthropic.com/claude</code>, or <code>https://www.perplexity.ai</code></p>
+          <p>Try URLs like <code>https://www.openai.com/chatgpt</code></p>
         </div>
+
+        {/* Changed from <form> to <div> to avoid nesting inside another form */}
         <div className="flex gap-3">
           <div className="flex-grow">
             <Input
               type="url"
-              placeholder="Enter website URL (e.g., https://www.openai.com/chatgpt)"
+              placeholder="https://example.com"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={e => setUrl(e.target.value)}
               className="admin-input"
             />
           </div>
-          <Button 
-            onClick={handleSubmit} 
-            className="admin-button" 
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            className="admin-button"
             disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Extracting...
-              </>
-            ) : (
-              'Extract Data'
-            )}
+            {isLoading
+              ? <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Extracting...
+                </>
+              : 'Extract Data'}
           </Button>
         </div>
       </CardContent>

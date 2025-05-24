@@ -1,3 +1,4 @@
+// ToolForm.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -38,7 +39,7 @@ import { Separator } from '@/components/ui/separator';
 import { X, Plus } from 'lucide-react';
 import UrlSubmissionForm from './UrlSubmissionForm';
 
-// Define form schema with Zod
+// --- Zod schema ---
 const toolFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -47,15 +48,19 @@ const toolFormSchema = z.object({
   thumbnail: z.string().url('Must be a valid URL'),
   categories: z.array(z.string()).min(1, 'At least one category is required'),
   pricing_type: z.enum(['Free', 'Freemium', 'Paid', 'Subscription']),
-  pricing_details: z.object({
-    starting_price: z.number().optional(),
-    has_free_trial: z.boolean().optional(),
-    trial_days: z.number().optional(),
-  }).optional(),
-  features: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-  })),
+  pricing_details: z
+    .object({
+      starting_price: z.number().optional(),
+      has_free_trial: z.boolean().optional(),
+      trial_days: z.number().optional(),
+    })
+    .optional(),
+  features: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+    })
+  ),
   use_cases: z.array(z.string()),
   compatible_platforms: z.array(z.string()),
   integrations: z.array(z.string()),
@@ -66,10 +71,9 @@ const toolFormSchema = z.object({
   version: z.string().optional(),
   tags: z.array(z.string()),
 });
-
 type ToolFormValues = z.infer<typeof toolFormSchema>;
 
-// Helper function to prepare default values for the form
+// --- prepareDefaultValues ---
 const prepareDefaultValues = (tool: AITool | null): ToolFormValues => {
   if (!tool) {
     return {
@@ -80,11 +84,7 @@ const prepareDefaultValues = (tool: AITool | null): ToolFormValues => {
       thumbnail: '',
       categories: [],
       pricing_type: 'Free' as PricingType,
-      pricing_details: {
-        starting_price: 0,
-        has_free_trial: false,
-        trial_days: 0,
-      },
+      pricing_details: { starting_price: 0, has_free_trial: false, trial_days: 0 },
       features: [{ name: '', description: '' }],
       use_cases: [''],
       compatible_platforms: [],
@@ -97,176 +97,195 @@ const prepareDefaultValues = (tool: AITool | null): ToolFormValues => {
       tags: [],
     };
   }
-
   return {
     ...tool,
     api_documentation: tool.api_documentation || '',
     creator: tool.creator || '',
     creator_website: tool.creator_website || '',
     version: tool.version || '',
-    // Ensure arrays are properly initialized
     categories: tool.categories || [],
     features: tool.features || [{ name: '', description: '' }],
     use_cases: tool.use_cases || [''],
     compatible_platforms: tool.compatible_platforms || [],
     integrations: tool.integrations || [],
     tags: tool.tags || [],
-    pricing_details: tool.pricing_details || {
-      starting_price: 0,
-      has_free_trial: false,
-      trial_days: 0,
-    },
+    pricing_details:
+      tool.pricing_details || { starting_price: 0, has_free_trial: false, trial_days: 0 },
   };
 };
 
 const ToolForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { selectedTool, createTool, updateTool, loading, tools, apiUrl } = useAdmin();
+  const { selectedTool, tools } = useAdmin();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newTag, setNewTag] = useState('');
 
-  // Setup form with defaultValues
   const form = useForm<ToolFormValues>({
     resolver: zodResolver(toolFormSchema),
     defaultValues: prepareDefaultValues(selectedTool),
   });
 
-  // If editing existing tool, load it from tools array if not already in selectedTool
   useEffect(() => {
     if (id && !selectedTool) {
-      const toolToEdit = tools.find(t => t.id === id);
+      const toolToEdit = tools.find((t) => t.id === id);
       if (toolToEdit) {
         form.reset(prepareDefaultValues(toolToEdit));
       }
     }
   }, [id, selectedTool, tools, form]);
 
-  // Handle URL extraction data
   const handleExtractedData = (data: AITool) => {
     form.reset(prepareDefaultValues(data));
   };
 
-  // Submit handler
   const onSubmit = async (values: ToolFormValues) => {
-    // Clean up empty values in arrays
     const cleanedValues = {
       ...values,
-      categories: values.categories.filter(c => c.trim() !== ''),
-      features: values.features.filter(f => f.name.trim() !== '' || f.description.trim() !== ''),
-      use_cases: values.use_cases.filter(uc => uc.trim() !== ''),
-      compatible_platforms: values.compatible_platforms.filter(p => p.trim() !== ''),
-      integrations: values.integrations.filter(i => i.trim() !== ''),
-      tags: values.tags.filter(t => t.trim() !== ''),
+      categories: values.categories.filter((c) => c.trim() !== ''),
+      features: values.features.filter(
+        (f) => f.name.trim() !== '' || f.description.trim() !== ''
+      ),
+      use_cases: values.use_cases.filter((uc) => uc.trim() !== ''),
+      compatible_platforms: values.compatible_platforms.filter((p) => p.trim() !== ''),
+      integrations: values.integrations.filter((i) => i.trim() !== ''),
+      tags: values.tags.filter((t) => t.trim() !== ''),
     };
 
-    let success = false;
-    if (id) {
-      // Update existing tool
-      success = await updateTool(id, cleanedValues as AITool);
-    } else {
-      // Create new tool
-      success = await createTool(cleanedValues as AITool);
-    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/store-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_data: cleanedValues }),
 
-    if (success) {
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
       navigate('/admin/tools');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Submission failed';
+      form.setError('title', { type: 'manual', message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Handle array fields
+  // --- Array field handlers ---
   const addCategory = () => {
-    if (newCategory.trim() && !form.getValues().categories.includes(newCategory.trim())) {
-      form.setValue('categories', [...form.getValues().categories, newCategory.trim()]);
+    const cat = newCategory.trim();
+    if (cat && !form.getValues().categories.includes(cat)) {
+      form.setValue('categories', [...form.getValues().categories, cat]);
       setNewCategory('');
     }
   };
-
   const removeCategory = (index: number) => {
-    const currentCategories = form.getValues().categories;
-    form.setValue('categories', currentCategories.filter((_, i) => i !== index));
+    form.setValue(
+      'categories',
+      form.getValues().categories.filter((_, i) => i !== index)
+    );
   };
 
   const addTag = () => {
-    if (newTag.trim() && !form.getValues().tags.includes(newTag.trim())) {
-      form.setValue('tags', [...form.getValues().tags, newTag.trim()]);
+    const tag = newTag.trim();
+    if (tag && !form.getValues().tags.includes(tag)) {
+      form.setValue('tags', [...form.getValues().tags, tag]);
       setNewTag('');
     }
   };
-
   const removeTag = (index: number) => {
-    const currentTags = form.getValues().tags;
-    form.setValue('tags', currentTags.filter((_, i) => i !== index));
+    form.setValue('tags', form.getValues().tags.filter((_, i) => i !== index));
   };
 
   const addFeature = () => {
-    form.setValue('features', [...form.getValues().features, { name: '', description: '' }]);
+    form.setValue('features', [
+      ...form.getValues().features,
+      { name: '', description: '' },
+    ]);
   };
-
   const removeFeature = (index: number) => {
-    const currentFeatures = form.getValues().features;
-    form.setValue('features', currentFeatures.filter((_, i) => i !== index));
+    form.setValue(
+      'features',
+      form.getValues().features.filter((_, i) => i !== index)
+    );
   };
 
   const addUseCase = () => {
     form.setValue('use_cases', [...form.getValues().use_cases, '']);
   };
-
   const removeUseCase = (index: number) => {
-    const currentUseCases = form.getValues().use_cases;
-    form.setValue('use_cases', currentUseCases.filter((_, i) => i !== index));
+    form.setValue(
+      'use_cases',
+      form.getValues().use_cases.filter((_, i) => i !== index)
+    );
   };
 
-  // Common platforms list
   const commonPlatforms = [
-    'Web', 'iOS', 'Android', 'Windows', 'macOS', 'Linux', 
-    'Chrome Extension', 'Firefox Extension', 'Slack', 'Discord'
+    'Web',
+    'iOS',
+    'Android',
+    'Windows',
+    'macOS',
+    'Linux',
+    'Chrome Extension',
+    'Firefox Extension',
+    'Slack',
+    'Discord',
   ];
-
   const togglePlatform = (platform: string) => {
-    const currentPlatforms = form.getValues().compatible_platforms;
-    if (currentPlatforms.includes(platform)) {
-      form.setValue('compatible_platforms', currentPlatforms.filter(p => p !== platform));
-    } else {
-      form.setValue('compatible_platforms', [...currentPlatforms, platform]);
-    }
+    const current = form.getValues().compatible_platforms;
+    form.setValue(
+      'compatible_platforms',
+      current.includes(platform)
+        ? current.filter((p) => p !== platform)
+        : [...current, platform]
+    );
   };
 
-  // Common integrations list
   const commonIntegrations = [
-    'Slack', 'Discord', 'Teams', 'Google Workspace', 'Microsoft Office',
-    'Zapier', 'Notion', 'Trello', 'GitHub', 'GitLab', 'Figma'
+    'Slack',
+    'Discord',
+    'Teams',
+    'Google Workspace',
+    'Microsoft Office',
+    'Zapier',
+    'Notion',
+    'Trello',
+    'GitHub',
+    'GitLab',
+    'Figma',
   ];
-
   const toggleIntegration = (integration: string) => {
-    const currentIntegrations = form.getValues().integrations;
-    if (currentIntegrations.includes(integration)) {
-      form.setValue('integrations', currentIntegrations.filter(i => i !== integration));
-    } else {
-      form.setValue('integrations', [...currentIntegrations, integration]);
-    }
+    const current = form.getValues().integrations;
+    form.setValue(
+      'integrations',
+      current.includes(integration)
+        ? current.filter((i) => i !== integration)
+        : [...current, integration]
+    );
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* URL Submission Form - Only show on new tool creation */}
-        {!id && <UrlSubmissionForm onDataReceived={handleExtractedData} apiUrl={apiUrl} />}
-        
+        {/* URL extractor */}
+        {!id && <UrlSubmissionForm onDataReceived={handleExtractedData} />}
+
         <Card>
           <CardHeader>
             <CardTitle>{id ? 'Edit AI Tool' : 'Add New AI Tool'}</CardTitle>
             <CardDescription>
-              {id 
-                ? 'Update the information for this AI tool.' 
+              {id
+                ? 'Update the information for this AI tool.'
                 : 'Fill out the form to add a new AI tool to the catalog.'}
             </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -281,7 +300,7 @@ const ToolForm: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="website"
@@ -296,7 +315,7 @@ const ToolForm: React.FC = () => {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -304,16 +323,13 @@ const ToolForm: React.FC = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field}
-                        rows={4}
-                      />
+                      <Textarea {...field} rows={4} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -328,7 +344,7 @@ const ToolForm: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="thumbnail"
@@ -344,25 +360,25 @@ const ToolForm: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <Separator />
-            
-            {/* Categories and Tags */}
+
+            {/* Categories & Tags */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Categories and Tags</h3>
-              
+
               <div>
                 <FormLabel>Categories</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                  {form.getValues().categories.map((category, index) => (
-                    <Badge key={index} variant="secondary" className="px-3 py-1 text-sm">
-                      {category}
+                  {form.getValues().categories.map((cat, i) => (
+                    <Badge key={i} variant="secondary" className="px-3 py-1 text-sm">
+                      {cat}
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="ml-1 p-0 h-4 w-4"
-                        onClick={() => removeCategory(index)}
+                        onClick={() => removeCategory(i)}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -392,19 +408,19 @@ const ToolForm: React.FC = () => {
                   </p>
                 )}
               </div>
-              
+
               <div>
                 <FormLabel>Tags</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                  {form.getValues().tags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="px-3 py-1 text-sm">
+                  {form.getValues().tags.map((tag, i) => (
+                    <Badge key={i} variant="outline" className="px-3 py-1 text-sm">
                       {tag}
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="ml-1 p-0 h-4 w-4"
-                        onClick={() => removeTag(index)}
+                        onClick={() => removeTag(i)}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -430,23 +446,20 @@ const ToolForm: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             {/* Pricing */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Pricing</h3>
-              
+
               <FormField
                 control={form.control}
                 name="pricing_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pricing Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select pricing type" />
@@ -463,7 +476,7 @@ const ToolForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-              
+
               {form.watch('pricing_type') !== 'Free' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -473,17 +486,17 @@ const ToolForm: React.FC = () => {
                       <FormItem>
                         <FormLabel>Starting Price ($)</FormLabel>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          <Input
+                            {...field}
+                            type="number"
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="space-y-4">
                     <FormField
                       control={form.control}
@@ -492,15 +505,12 @@ const ToolForm: React.FC = () => {
                         <FormItem className="flex items-center justify-between">
                           <FormLabel>Has Free Trial</FormLabel>
                           <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
                           </FormControl>
                         </FormItem>
                       )}
                     />
-                    
+
                     {form.watch('pricing_details.has_free_trial') && (
                       <FormField
                         control={form.control}
@@ -509,10 +519,10 @@ const ToolForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Trial Period (days)</FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                type="number" 
-                                onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                              <Input
+                                {...field}
+                                type="number"
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                               />
                             </FormControl>
                             <FormMessage />
@@ -524,9 +534,9 @@ const ToolForm: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <Separator />
-            
+
             {/* Features */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -535,22 +545,22 @@ const ToolForm: React.FC = () => {
                   <Plus className="h-4 w-4 mr-1" /> Add Feature
                 </Button>
               </div>
-              
-              {form.getValues().features.map((_, index) => (
-                <div key={index} className="space-y-4 p-4 border rounded-md relative">
+
+              {form.getValues().features.map((_, idx) => (
+                <div key={idx} className="space-y-4 p-4 border rounded-md relative">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="absolute top-2 right-2"
-                    onClick={() => removeFeature(index)}
+                    onClick={() => removeFeature(idx)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                  
+
                   <FormField
                     control={form.control}
-                    name={`features.${index}.name`}
+                    name={`features.${idx}.name`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Feature Name</FormLabel>
@@ -561,10 +571,10 @@ const ToolForm: React.FC = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name={`features.${index}.description`}
+                    name={`features.${idx}.description`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Description</FormLabel>
@@ -578,9 +588,9 @@ const ToolForm: React.FC = () => {
                 </div>
               ))}
             </div>
-            
+
             <Separator />
-            
+
             {/* Use Cases */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -589,19 +599,16 @@ const ToolForm: React.FC = () => {
                   <Plus className="h-4 w-4 mr-1" /> Add Use Case
                 </Button>
               </div>
-              
-              {form.getValues().use_cases.map((_, index) => (
-                <div key={index} className="flex items-center">
+
+              {form.getValues().use_cases.map((_, idx) => (
+                <div key={idx} className="flex items-center">
                   <FormField
                     control={form.control}
-                    name={`use_cases.${index}`}
+                    name={`use_cases.${idx}`}
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder={`Use case ${index + 1}`} 
-                          />
+                          <Input {...field} placeholder={`Use case ${idx + 1}`} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -612,80 +619,64 @@ const ToolForm: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="ml-2"
-                    onClick={() => removeUseCase(index)}
+                    onClick={() => removeUseCase(idx)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
             </div>
-            
+
             <Separator />
-            
+
             {/* Compatible Platforms */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Compatible Platforms</h3>
-              
               <div className="flex flex-wrap gap-2">
-                {commonPlatforms.map((platform) => (
+                {commonPlatforms.map((p) => (
                   <Button
-                    key={platform}
+                    key={p}
                     type="button"
-                    variant={
-                      form.getValues().compatible_platforms.includes(platform)
-                        ? "default"
-                        : "outline"
-                    }
+                    variant={form.getValues().compatible_platforms.includes(p) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => togglePlatform(platform)}
+                    onClick={() => togglePlatform(p)}
                   >
-                    {platform}
+                    {p}
                   </Button>
                 ))}
               </div>
-              
               <FormField
                 control={form.control}
                 name="compatible_platforms"
-                render={() => (
-                  <FormItem>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={() => <FormItem><FormMessage /></FormItem>}
               />
             </div>
-            
+
             <Separator />
-            
+
             {/* Integrations */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Integrations</h3>
-              
               <div className="flex flex-wrap gap-2">
-                {commonIntegrations.map((integration) => (
+                {commonIntegrations.map((i) => (
                   <Button
-                    key={integration}
+                    key={i}
                     type="button"
-                    variant={
-                      form.getValues().integrations.includes(integration)
-                        ? "default"
-                        : "outline"
-                    }
+                    variant={form.getValues().integrations.includes(i) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => toggleIntegration(integration)}
+                    onClick={() => toggleIntegration(i)}
                   >
-                    {integration}
+                    {i}
                   </Button>
                 ))}
               </div>
             </div>
-            
+
             <Separator />
-            
+
             {/* API Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">API Information</h3>
-              
               <FormField
                 control={form.control}
                 name="api_available"
@@ -693,15 +684,11 @@ const ToolForm: React.FC = () => {
                   <FormItem className="flex items-center justify-between">
                     <FormLabel>API Available</FormLabel>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              
               {form.watch('api_available') && (
                 <FormField
                   control={form.control}
@@ -718,13 +705,12 @@ const ToolForm: React.FC = () => {
                 />
               )}
             </div>
-            
+
             <Separator />
-            
+
             {/* Creator Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Creator Information</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -739,7 +725,6 @@ const ToolForm: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                
                 <FormField
                   control={form.control}
                   name="creator_website"
@@ -754,7 +739,6 @@ const ToolForm: React.FC = () => {
                   )}
                 />
               </div>
-              
               <FormField
                 control={form.control}
                 name="version"
@@ -770,16 +754,13 @@ const ToolForm: React.FC = () => {
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/admin/tools')}
-            >
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/tools')}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Processing...' : id ? 'Update Tool' : 'Create Tool'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting…' : id ? 'Update Tool' : 'Create Tool'}
             </Button>
           </CardFooter>
         </Card>
