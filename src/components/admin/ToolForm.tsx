@@ -127,6 +127,10 @@ const ToolForm: React.FC = () => {
     defaultValues: prepareDefaultValues(selectedTool),
   });
 
+  // ** these two lines make the list live-update **
+  const features = form.watch('features');
+  const useCases = form.watch('use_cases');
+
   useEffect(() => {
     if (id && !selectedTool) {
       const toolToEdit = tools.find((t) => t.id === id);
@@ -159,7 +163,6 @@ const ToolForm: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent_data: cleanedValues }),
-
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       navigate('/admin/tools');
@@ -285,7 +288,6 @@ const ToolForm: React.FC = () => {
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -300,7 +302,6 @@ const ToolForm: React.FC = () => {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="website"
@@ -315,7 +316,6 @@ const ToolForm: React.FC = () => {
                   )}
                 />
               </div>
-
               <FormField
                 control={form.control}
                 name="description"
@@ -329,7 +329,6 @@ const ToolForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -344,7 +343,6 @@ const ToolForm: React.FC = () => {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="thumbnail"
@@ -366,7 +364,6 @@ const ToolForm: React.FC = () => {
             {/* Categories & Tags */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Categories and Tags</h3>
-
               <div>
                 <FormLabel>Categories</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
@@ -408,7 +405,6 @@ const ToolForm: React.FC = () => {
                   </p>
                 )}
               </div>
-
               <div>
                 <FormLabel>Tags</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
@@ -452,7 +448,6 @@ const ToolForm: React.FC = () => {
             {/* Pricing */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Pricing</h3>
-
               <FormField
                 control={form.control}
                 name="pricing_type"
@@ -476,7 +471,6 @@ const ToolForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               {form.watch('pricing_type') !== 'Free' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -496,7 +490,6 @@ const ToolForm: React.FC = () => {
                       </FormItem>
                     )}
                   />
-
                   <div className="space-y-4">
                     <FormField
                       control={form.control}
@@ -510,7 +503,6 @@ const ToolForm: React.FC = () => {
                         </FormItem>
                       )}
                     />
-
                     {form.watch('pricing_details.has_free_trial') && (
                       <FormField
                         control={form.control}
@@ -545,8 +537,7 @@ const ToolForm: React.FC = () => {
                   <Plus className="h-4 w-4 mr-1" /> Add Feature
                 </Button>
               </div>
-
-              {form.getValues().features.map((_, idx) => (
+              {features.map((_, idx) => (
                 <div key={idx} className="space-y-4 p-4 border rounded-md relative">
                   <Button
                     type="button"
@@ -557,7 +548,6 @@ const ToolForm: React.FC = () => {
                   >
                     <X className="h-4 w-4" />
                   </Button>
-
                   <FormField
                     control={form.control}
                     name={`features.${idx}.name`}
@@ -571,7 +561,6 @@ const ToolForm: React.FC = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name={`features.${idx}.description`}
@@ -599,8 +588,7 @@ const ToolForm: React.FC = () => {
                   <Plus className="h-4 w-4 mr-1" /> Add Use Case
                 </Button>
               </div>
-
-              {form.getValues().use_cases.map((_, idx) => (
+              {useCases.map((_, idx) => (
                 <div key={idx} className="flex items-center">
                   <FormField
                     control={form.control}
