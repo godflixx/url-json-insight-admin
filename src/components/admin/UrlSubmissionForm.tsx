@@ -9,7 +9,8 @@ import { AITool } from '@/types/admin';
 import { Loader2, Info } from 'lucide-react';
 
 interface UrlSubmissionFormProps {
-  onDataReceived: (data: AITool) => void;
+  /** Now receives both the company profile and the extracted agent info */
+  onDataReceived: (data: { company_data: any; agent_data: AITool }) => void;
 }
 
 const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
@@ -34,8 +35,12 @@ const UrlSubmissionForm: React.FC<UrlSubmissionFormProps> = ({
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const json = await res.json();
-      if (json.agent_data) {
-        onDataReceived(json.agent_data);
+
+      if (json.company_data && json.agent_data) {
+        onDataReceived({
+          company_data: json.company_data,
+          agent_data: json.agent_data
+        });
         toast({ title: "Success", description: "Data extracted successfully" });
       } else {
         throw new Error(json.detail || 'Invalid response');

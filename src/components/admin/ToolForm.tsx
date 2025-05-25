@@ -121,6 +121,11 @@ const ToolForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [newPlatform, setNewPlatform] = useState('');
+  const [newIntegrationItem, setNewIntegrationItem] = useState('');
+
+  // ← NEW: hold the extracted company profile
+  const [companyData, setCompanyData] = useState<Record<string, any> | null>(null);
 
   const form = useForm<ToolFormValues>({
     resolver: zodResolver(toolFormSchema),
@@ -130,6 +135,10 @@ const ToolForm: React.FC = () => {
   // ** these two lines make the list live-update **
   const features = form.watch('features');
   const useCases = form.watch('use_cases');
+  const categories = form.watch('categories');
+  const tags = form.watch('tags');
+  const compatiblePlatforms = form.watch('compatible_platforms');
+  const integrations = form.watch('integrations');
 
   useEffect(() => {
     if (id && !selectedTool) {
@@ -140,8 +149,10 @@ const ToolForm: React.FC = () => {
     }
   }, [id, selectedTool, tools, form]);
 
-  const handleExtractedData = (data: AITool) => {
-    form.reset(prepareDefaultValues(data));
+  // ← UPDATED: pull both company_data & agent_data from the scraper form
+  const handleExtractedData = (data: { company_data: any; agent_data: AITool }) => {
+    setCompanyData(data.company_data);
+    form.reset(prepareDefaultValues(data.agent_data));
   };
 
   const onSubmit = async (values: ToolFormValues) => {
@@ -158,20 +169,28 @@ const ToolForm: React.FC = () => {
     };
 
     setIsSubmitting(true);
-    try {
-      const res = await fetch('http://127.0.0.1:8000/store-agent', {
+      setIsSubmitting(true);
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/store-agent`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_data: cleanedValues }),
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      navigate('/admin/tools');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Submission failed';
-      form.setError('title', { type: 'manual', message });
-    } finally {
-      setIsSubmitting(false);
-    }
+        body: JSON.stringify({
+          company_data: { company_data: companyData || {} },
+          agent_data:  { agent_data:  cleanedValues },
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    navigate('/admin/tools');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Submission failed';
+    form.setError('title', { type: 'manual', message });
+  } finally {
+    setIsSubmitting(false);
+  }
+
   };
 
   // --- Array field handlers ---
@@ -223,48 +242,31 @@ const ToolForm: React.FC = () => {
     );
   };
 
-  const commonPlatforms = [
-    'Web',
-    'iOS',
-    'Android',
-    'Windows',
-    'macOS',
-    'Linux',
-    'Chrome Extension',
-    'Firefox Extension',
-    'Slack',
-    'Discord',
-  ];
-  const togglePlatform = (platform: string) => {
-    const current = form.getValues().compatible_platforms;
+  const addPlatform = () => {
+    const p = newPlatform.trim();
+    if (p && !form.getValues().compatible_platforms.includes(p)) {
+      form.setValue('compatible_platforms', [...form.getValues().compatible_platforms, p]);
+      setNewPlatform('');
+    }
+  };
+  const removePlatform = (index: number) => {
     form.setValue(
       'compatible_platforms',
-      current.includes(platform)
-        ? current.filter((p) => p !== platform)
-        : [...current, platform]
+      form.getValues().compatible_platforms.filter((_, i) => i !== index)
     );
   };
 
-  const commonIntegrations = [
-    'Slack',
-    'Discord',
-    'Teams',
-    'Google Workspace',
-    'Microsoft Office',
-    'Zapier',
-    'Notion',
-    'Trello',
-    'GitHub',
-    'GitLab',
-    'Figma',
-  ];
-  const toggleIntegration = (integration: string) => {
-    const current = form.getValues().integrations;
+  const addIntegration = () => {
+    const it = newIntegrationItem.trim();
+    if (it && !form.getValues().integrations.includes(it)) {
+      form.setValue('integrations', [...form.getValues().integrations, it]);
+      setNewIntegrationItem('');
+    }
+  };
+  const removeIntegration = (index: number) => {
     form.setValue(
       'integrations',
-      current.includes(integration)
-        ? current.filter((i) => i !== integration)
-        : [...current, integration]
+      form.getValues().integrations.filter((_, i) => i !== index)
     );
   };
 
@@ -367,7 +369,7 @@ const ToolForm: React.FC = () => {
               <div>
                 <FormLabel>Categories</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                  {form.getValues().categories.map((cat, i) => (
+                  {categories.map((cat, i) => (
                     <Badge key={i} variant="secondary" className="px-3 py-1 text-sm">
                       {cat}
                       <Button
@@ -408,7 +410,7 @@ const ToolForm: React.FC = () => {
               <div>
                 <FormLabel>Tags</FormLabel>
                 <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                  {form.getValues().tags.map((tag, i) => (
+                  {tags.map((tag, i) => (
                     <Badge key={i} variant="outline" className="px-3 py-1 text-sm">
                       {tag}
                       <Button
@@ -617,21 +619,41 @@ const ToolForm: React.FC = () => {
 
             <Separator />
 
-            {/* Compatible Platforms */}
+            {/* Compatible Platforms (now editable) */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Compatible Platforms</h3>
-              <div className="flex flex-wrap gap-2">
-                {commonPlatforms.map((p) => (
-                  <Button
-                    key={p}
-                    type="button"
-                    variant={form.getValues().compatible_platforms.includes(p) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => togglePlatform(p)}
-                  >
+              <div className="flex flex-wrap gap-2 mt-2 mb-3">
+                {compatiblePlatforms.map((p, i) => (
+                  <Badge key={i} variant="secondary" className="px-3 py-1 text-sm">
                     {p}
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-1 p-0 h-4 w-4"
+                      onClick={() => removePlatform(i)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
                 ))}
+              </div>
+              <div className="flex">
+                <Input
+                  value={newPlatform}
+                  onChange={(e) => setNewPlatform(e.target.value)}
+                  placeholder="Add a platform..."
+                  className="mr-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addPlatform();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addPlatform} size="sm">
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
               </div>
               <FormField
                 control={form.control}
@@ -642,22 +664,47 @@ const ToolForm: React.FC = () => {
 
             <Separator />
 
-            {/* Integrations */}
+            {/* Integrations (now editable) */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Integrations</h3>
-              <div className="flex flex-wrap gap-2">
-                {commonIntegrations.map((i) => (
-                  <Button
-                    key={i}
-                    type="button"
-                    variant={form.getValues().integrations.includes(i) ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => toggleIntegration(i)}
-                  >
-                    {i}
-                  </Button>
-                ))}
+              <div className="flex flex-wrap gap-2 mt-2 mb-3">
+                {integrations.map((it, i) => (
+                  <Badge key={i} variant="secondary" className="px-3 py-1 text-sm">
+                    {it}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-1 p-0 h-4 w-4"
+                      onClick={() => removeIntegration(i)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                     </Badge> 
+                  ))}
               </div>
+              <div className="flex">
+                <Input
+                  value={newIntegrationItem}
+                  onChange={(e) => setNewIntegrationItem(e.target.value)}
+                  placeholder="Add an integration..."
+                  className="mr-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addIntegration();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addIntegration} size="sm">
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+              <FormField
+                control={form.control}
+                name="integrations"
+                render={() => <FormItem><FormMessage /></FormItem>}
+              />
             </div>
 
             <Separator />
@@ -758,3 +805,4 @@ const ToolForm: React.FC = () => {
 };
 
 export default ToolForm;
+

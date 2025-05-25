@@ -16,8 +16,7 @@ const AdminSidebar: React.FC = () => {
     { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, path: "/admin" },
     { label: "Tools List", icon: <Database className="h-4 w-4" />, path: "/admin/tools" },
     { label: "Add New Tool", icon: <PlusCircle className="h-4 w-4" />, path: "/admin/tools/new" },
-    { label: "Settings", icon: <Settings className="h-4 w-4" />, path: "/admin/settings" },
-    { label: "View Library", icon: <BookOpen className="h-4 w-4" />, path: "/" }
+  
   ];
 
   return (
