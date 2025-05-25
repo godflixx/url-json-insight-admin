@@ -1,4 +1,4 @@
-// src/components/admin/ToolsList.tsx
+// src/components/admin/AgentsList.tsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/superbase'
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 
 interface Agent {
   id: string
@@ -34,6 +34,7 @@ interface Agent {
   categories: string[]
   pricing_type: string
   creator: string | null
+  created_at: string | null
   last_updated: string | null
 }
 
@@ -60,6 +61,7 @@ export default function AgentsList() {
         categories,
         pricing_type,
         creator,
+        created_at,
         last_updated
       `)
       .order('last_updated', { ascending: false })
@@ -68,7 +70,6 @@ export default function AgentsList() {
       console.error(error)
       setError(error.message)
     } else {
-      // cast to Agent[] so TS knows the shape
       setAgents(data as Agent[])
       setFiltered(data as Agent[])
     }
@@ -155,6 +156,7 @@ export default function AgentsList() {
                 <TableHead>Categories</TableHead>
                 <TableHead>Pricing</TableHead>
                 <TableHead>Creator</TableHead>
+                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -194,15 +196,9 @@ export default function AgentsList() {
                     </Badge>
                   </TableCell>
                   <TableCell>{ag.creator || 'Unknown'}</TableCell>
+                  <TableCell>{ag.created_at ? new Date(ag.created_at).toLocaleString() : '-'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => navigate(`/agents/edit/${ag.id}`)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
                       <Button
                         size="icon"
                         variant="ghost"
