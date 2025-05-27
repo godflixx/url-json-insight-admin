@@ -5,10 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 import Dashboard from "./pages/admin/Dashboard";
 import ToolsList from "./pages/admin/ToolsList";
 import ToolForm from "./pages/admin/ToolForm";
 import Settings from "./pages/admin/Settings";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +21,37 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Redirect root to admin dashboard */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
-          <Route path="/admin" element={<Dashboard />} />
-          <Route path="/admin/tools" element={<ToolsList />} />
-          <Route path="/admin/tools/new" element={<ToolForm />} />
-          <Route path="/admin/tools/edit/:id" element={<ToolForm />} />
-          <Route path="/admin/settings" element={<Settings />} />
+          {/* Redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected admin routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tools" element={
+            <ProtectedRoute>
+              <ToolsList />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tools/new" element={
+            <ProtectedRoute>
+              <ToolForm />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tools/edit/:id" element={
+            <ProtectedRoute>
+              <ToolForm />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
