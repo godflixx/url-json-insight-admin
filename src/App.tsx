@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import Dashboard from "./pages/admin/Dashboard";
 import ToolsList from "./pages/admin/ToolsList";
 import ToolForm from "./pages/admin/ToolForm";
 import Settings from "./pages/admin/Settings";
@@ -25,10 +24,10 @@ const App = () => (
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           
-          {/* Protected admin routes */}
+          {/* Protected admin routes - redirect /admin to /admin/tools */}
           <Route path="/admin" element={
             <ProtectedRoute>
-              <Dashboard />
+              <Navigate to="/admin/tools" replace />
             </ProtectedRoute>
           } />
           <Route path="/admin/tools" element={

@@ -4,8 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/contexts/AdminContext';
 import { 
-  LayoutDashboard, Database, 
-  PlusCircle, Settings, BookOpen, LogOut
+  Database, 
+  PlusCircle, LogOut
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,7 +16,6 @@ const AdminSidebar: React.FC = () => {
   const { toast } = useToast();
 
   const navItems = [
-    { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, path: "/admin" },
     { label: "Tools List", icon: <Database className="h-4 w-4" />, path: "/admin/tools" },
     { label: "Add New Tool", icon: <PlusCircle className="h-4 w-4" />, path: "/admin/tools/new" },
   ];
